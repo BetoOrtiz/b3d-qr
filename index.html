@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>B3D QR · Contacto por WhatsApp</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f5f7f7; color: #17202a; }
+    main { width: min(90vw, 390px); background: white; border: 1px solid #dde4e4; border-radius: 18px; padding: 28px 20px; text-align: center; box-sizing: border-box; }
+    .mark { display: inline-grid; place-items: center; background: #16252a; color: white; border-radius: 14px; font-size: 24px; font-weight: 900; width: 80px; height: 64px; letter-spacing: -.05em; }
+    h1 { margin: 20px 0 8px; font-size: 22px; }
+    p { line-height: 1.55; color: #56646e; }
+    a { display: inline-block; margin: 12px 0 0; padding: 12px 18px; color: white; background: #127c45; border-radius: 10px; text-decoration: none; font-weight: bold; }
+    a[hidden] { display: none; }
+    small { display:block; margin-top: 24px; color: #78848b; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="mark" aria-label="B3D">B3D</div>
+    <h1>Contacto por WhatsApp</h1>
+    <p id="estado" role="status" aria-live="polite">Buscando contacto…</p>
+    <a id="abrir" hidden rel="noopener noreferrer">Abrir WhatsApp</a>
+    <small>B3D · Sistema de QR dinámicos (prueba)</small>
+  </main>
+  <script>
+    (function () {
+      "use strict";
+      // Google Apps Script público: consulta el ID sin exponer la hoja completa.
+      const API = "https://script.google.com/macros/s/AKfycbyml-2N2mjWC48uKC-g7JMms1BFjhuWH-SzaiK7NWAbTmZxyERIDdpDHxUM67X0NZKj/exec";
+      const params = new URLSearchParams(location.search);
+      const id = (params.get("id") || params.get("k") || "").trim().toUpperCase();
+      const estado = document.getElementById("estado");
+      const abrir = document.getElementById("abrir");
+      let finalizado = false;
+
+      function mostrarError(mensaje) {
+        if (finalizado) return;
+        finalizado = true;
+        estado.textContent = mensaje || "No fue posible consultar este contacto. Inténtalo de nuevo.";
+      }
+      if (!/^[A-Z0-9-]{3,40}$/.test(id)) {
+        mostrarError("Este código QR no contiene un identificador válido.");
+        return;
+      }
+      const limite = setTimeout(function () {
+        mostrarError("La consulta está tardando demasiado. Inténtalo de nuevo.");
+      }, 15000);
+
+      window.b3dRecibir = function (respuesta) {
+        if (finalizado) return;
+        clearTimeout(limite);
+        if (!respuesta || !respuesta.ok || typeof respuesta.url !== "string") {
+          mostrarError((respuesta && respuesta.mensaje) || "No se encontró un contacto activo.");
+          return;
+        }
+        // Solo permitir enlaces válidos de WhatsApp para México.
+        if (!/^https:\/\/wa\.me\/52\d{10}$/.test(respuesta.url)) {
+          mostrarError("El enlace de WhatsApp no es válido.");
+          return;
+        }
+        finalizado = true;
+        estado.textContent = "Abriendo WhatsApp… Si no se abre automáticamente, pulsa el botón.";
+        abrir.href = respuesta.url;
+        abrir.hidden = false;
+        window.location.replace(respuesta.url);
+      };
+
+      const etiqueta = document.createElement("script");
+      etiqueta.src = API + "?id=" + encodeURIComponent(id) + "&modo=js";
+      etiqueta.async = true;
+      etiqueta.onerror = function () {
+        clearTimeout(limite);
+        mostrarError("No se pudo conectar con el sistema B3D QR.");
+      };
+      document.head.appendChild(etiqueta);
+    }());
+  </script>
+</body>
+</html>
