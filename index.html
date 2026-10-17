@@ -4,36 +4,101 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>B3D QR · Enlaces dinámicos universales</title>
+  <title>B3D QR Universal</title>
+
   <style>
-    :root { color-scheme: light; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
-    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f5f7f7; color: #17202a; }
-    main { width: min(90vw, 390px); background: white; border: 1px solid #dde4e4; border-radius: 18px; padding: 28px 20px; text-align: center; box-sizing: border-box; }
-    .mark { display: inline-grid; place-items: center; background: #16252a; color: white; border-radius: 14px; font-size: 24px; font-weight: 900; width: 80px; height: 64px; letter-spacing: -.05em; }
-    h1 { margin: 20px 0 8px; font-size: 22px; }
-    p { line-height: 1.55; color: #56646e; }
-    a { display: inline-block; margin: 12px 0 0; padding: 12px 18px; color: white; background: #127c45; border-radius: 10px; text-decoration: none; font-weight: bold; }
-    a[hidden] { display: none; }
-    small { display:block; margin-top: 24px; color: #78848b; }
+    :root {
+      color-scheme: light;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: #f5f7f7;
+      color: #17202a;
+    }
+
+    main {
+      width: min(90vw, 420px);
+      background: white;
+      border: 1px solid #dde4e4;
+      border-radius: 18px;
+      padding: 28px 20px;
+      text-align: center;
+      box-sizing: border-box;
+    }
+
+    .logo {
+      width: 120px;
+      height: 120px;
+      object-fit: contain;
+      display: block;
+      margin: 0 auto 18px;
+    }
+
+    h1 {
+      margin: 8px 0 10px;
+      font-size: 22px;
+    }
+
+    p {
+      line-height: 1.55;
+      color: #56646e;
+    }
+
+    a {
+      display: inline-block;
+      margin: 12px 0 0;
+      padding: 12px 18px;
+      color: white;
+      background: #127c45;
+      border-radius: 10px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    a[hidden] {
+      display: none;
+    }
+
+    small {
+      display: block;
+      margin-top: 24px;
+      color: #78848b;
+    }
   </style>
 </head>
 <body>
   <main>
-    <div class="mark" aria-label="B3D">B3D</div>
+    <img src="./logo-b3d.png" alt="Logo B3D" class="logo">
+
     <h1>B3D QR Universal</h1>
-    <p id="estado" role="status" aria-live="polite">Consultando enlace de destino…</p>
-    <a id="abrir" hidden rel="noopener noreferrer">Abrir enlace</a>
+    <p id="estado" role="status" aria-live="polite">
+      Consultando enlace de destino…
+    </p>
+
+    <a id="abrir" hidden rel="noopener noreferrer" target="_blank">
+      Abrir enlace
+    </a>
+
     <small>B3D · QR dinámicos universales (prototipo)</small>
   </main>
+
   <script>
     (function () {
       "use strict";
-      // Google Apps Script público: consulta el ID sin exponer la hoja completa.
+
       const API = "https://script.google.com/macros/s/AKfycbyml-2N2mjWC48uKC-g7JMms1BFjhuWH-SzaiK7NWAbTmZxyERIDdpDHxUM67X0NZKj/exec";
+
       const params = new URLSearchParams(location.search);
       const id = (params.get("id") || params.get("k") || "").trim().toUpperCase();
+
       const estado = document.getElementById("estado");
       const abrir = document.getElementById("abrir");
+
       let finalizado = false;
 
       function mostrarError(mensaje) {
@@ -41,38 +106,53 @@
         finalizado = true;
         estado.textContent = mensaje || "No fue posible consultar este contacto. Inténtalo de nuevo.";
       }
+
       if (!/^[A-Z0-9-]{3,40}$/.test(id)) {
         mostrarError("Este código QR no contiene un identificador válido.");
         return;
       }
+
       const limite = setTimeout(function () {
         mostrarError("La consulta está tardando demasiado. Inténtalo de nuevo.");
       }, 15000);
 
       window.b3dRecibir = function (respuesta) {
         if (finalizado) return;
+
         clearTimeout(limite);
+
         if (!respuesta || !respuesta.ok || typeof respuesta.url !== "string") {
           mostrarError((respuesta && respuesta.mensaje) || "No se encontró un contacto activo.");
           return;
         }
-        // Solo permitimos destinos HTTPS válidos, sin credenciales ni servidores locales.
+
         let destino;
-        try { destino = new URL(respuesta.url); } catch (_) {
+        try {
+          destino = new URL(respuesta.url);
+        } catch (_) {
           mostrarError("El enlace del cliente no es válido.");
           return;
         }
+
         const host = destino.hostname.toLowerCase();
-        if (destino.protocol !== "https:" || !host.includes(".") ||
-            host === "localhost" || host.endsWith(".localhost") ||
-            destino.username || destino.password) {
+
+        if (
+          destino.protocol !== "https:" ||
+          !host.includes(".") ||
+          host === "localhost" ||
+          host.endsWith(".localhost") ||
+          destino.username ||
+          destino.password
+        ) {
           mostrarError("El enlace debe ser una dirección HTTPS pública.");
           return;
         }
+
         finalizado = true;
         estado.textContent = "Abriendo el enlace… Si no se abre, utiliza el botón.";
         abrir.href = destino.href;
         abrir.hidden = false;
+
         window.location.replace(destino.href);
       };
 
@@ -83,6 +163,7 @@
         clearTimeout(limite);
         mostrarError("No se pudo conectar con el sistema B3D QR.");
       };
+
       document.head.appendChild(etiqueta);
     }());
   </script>
