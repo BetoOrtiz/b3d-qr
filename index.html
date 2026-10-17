@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>B3D QR · Contacto por WhatsApp</title>
+  <title>B3D QR · Enlaces dinámicos universales</title>
   <style>
     :root { color-scheme: light; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
     body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f5f7f7; color: #17202a; }
@@ -20,10 +20,10 @@
 <body>
   <main>
     <div class="mark" aria-label="B3D">B3D</div>
-    <h1>Contacto por WhatsApp</h1>
-    <p id="estado" role="status" aria-live="polite">Buscando contacto…</p>
-    <a id="abrir" hidden rel="noopener noreferrer">Abrir WhatsApp</a>
-    <small>B3D · Sistema de QR dinámicos (prueba)</small>
+    <h1>B3D QR Universal</h1>
+    <p id="estado" role="status" aria-live="polite">Consultando enlace de destino…</p>
+    <a id="abrir" hidden rel="noopener noreferrer">Abrir enlace</a>
+    <small>B3D · QR dinámicos universales (prototipo)</small>
   </main>
   <script>
     (function () {
@@ -56,20 +56,28 @@
           mostrarError((respuesta && respuesta.mensaje) || "No se encontró un contacto activo.");
           return;
         }
-        // Solo permitir enlaces válidos de WhatsApp para México.
-        if (!/^https:\/\/wa\.me\/52\d{10}$/.test(respuesta.url)) {
-          mostrarError("El enlace de WhatsApp no es válido.");
+        // Solo permitimos destinos HTTPS válidos, sin credenciales ni servidores locales.
+        let destino;
+        try { destino = new URL(respuesta.url); } catch (_) {
+          mostrarError("El enlace del cliente no es válido.");
+          return;
+        }
+        const host = destino.hostname.toLowerCase();
+        if (destino.protocol !== "https:" || !host.includes(".") ||
+            host === "localhost" || host.endsWith(".localhost") ||
+            destino.username || destino.password) {
+          mostrarError("El enlace debe ser una dirección HTTPS pública.");
           return;
         }
         finalizado = true;
-        estado.textContent = "Abriendo WhatsApp… Si no se abre automáticamente, pulsa el botón.";
-        abrir.href = respuesta.url;
+        estado.textContent = "Abriendo el enlace… Si no se abre, utiliza el botón.";
+        abrir.href = destino.href;
         abrir.hidden = false;
-        window.location.replace(respuesta.url);
+        window.location.replace(destino.href);
       };
 
       const etiqueta = document.createElement("script");
-      etiqueta.src = API + "?id=" + encodeURIComponent(id) + "&modo=js";
+      etiqueta.src = API + "?id=" + encodeURIComponent(id) + "&modo=js&t=" + Date.now();
       etiqueta.async = true;
       etiqueta.onerror = function () {
         clearTimeout(limite);
